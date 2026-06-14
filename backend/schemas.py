@@ -1,13 +1,11 @@
 """
-Pydantic schemas for API request/response validation.
+Pydantic schemas for request/response validation.
 """
 
 from datetime import date
 from typing import List, Optional
-
 from pydantic import BaseModel, EmailStr
 
-# User schemas
 class UserBase(BaseModel):
     name: str
     birth_date: date
@@ -17,13 +15,12 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     pass
 
-class UserRead(UserBase):
+class User(UserBase):
     id: int
 
     class Config:
         orm_mode = True
 
-# Vaccine schemas
 class VaccineBase(BaseModel):
     name: str
     manufacturer: str
@@ -32,29 +29,24 @@ class VaccineBase(BaseModel):
 class VaccineCreate(VaccineBase):
     pass
 
-class VaccineRead(VaccineBase):
+class Vaccine(VaccineBase):
     id: int
 
     class Config:
         orm_mode = True
 
-# Vaccination schemas
 class VaccinationBase(BaseModel):
     vaccine_id: int
     date: date
-    side_effects: Optional[dict] = None
+    side_effects: Optional[List[str]] = None
 
 class VaccinationCreate(VaccinationBase):
-    pass
+    user_id: int
 
-class VaccinationRead(VaccinationBase):
+class Vaccination(VaccinationBase):
     id: int
     user_id: int
-    vaccine: VaccineRead
+    vaccine: Vaccine
 
     class Config:
         orm_mode = True
-
-# For list responses
-class VaccinationList(BaseModel):
-    vaccinations: List[VaccinationRead]

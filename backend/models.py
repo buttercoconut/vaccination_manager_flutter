@@ -1,10 +1,10 @@
 """
-SQLAlchemy models for User, Vaccine, and Vaccination.
+Database models using SQLAlchemy for FastAPI.
 """
 
+from datetime import date
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, JSON
 from sqlalchemy.orm import relationship
-
 from .database import Base
 
 class User(Base):
@@ -35,7 +35,7 @@ class Vaccination(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     vaccine_id = Column(Integer, ForeignKey("vaccines.id"), nullable=False)
     date = Column(Date, nullable=False)
-    side_effects = Column(JSON, default={})
+    side_effects = Column(JSON)
 
     user = relationship("User", back_populates="vaccinations")
     vaccine = relationship("Vaccine", back_populates="vaccinations")
