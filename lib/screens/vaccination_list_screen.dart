@@ -1,9 +1,5 @@
-"""
-Screen to display list of vaccinations.
-"""
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
+import '../widgets/vaccination_card.dart';
 import '../services/api_service.dart';
 import '../models/vaccination.dart';
 
@@ -11,7 +7,7 @@ class VaccinationListScreen extends StatefulWidget {
   const VaccinationListScreen({Key? key}) : super(key: key);
 
   @override
-  _VaccinationListScreenState createState() => _VaccinationListScreenState();
+  State<VaccinationListScreen> createState() => _VaccinationListScreenState();
 }
 
 class _VaccinationListScreenState extends State<VaccinationListScreen> {
@@ -25,10 +21,9 @@ class _VaccinationListScreenState extends State<VaccinationListScreen> {
   }
 
   Future<void> _fetchVaccinations() async {
-    final apiService = Provider.of<ApiService>(context, listen: false);
-    final list = await apiService.getVaccinations();
+    final data = await ApiService.getVaccinations();
     setState(() {
-      _vaccinations = list;
+      _vaccinations = data;
       _loading = false;
     });
   }
@@ -36,17 +31,13 @@ class _VaccinationListScreenState extends State<VaccinationListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Vaccination History')),
+      appBar: AppBar(title: const Text('Vaccination List')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
               itemCount: _vaccinations.length,
               itemBuilder: (context, index) {
-                final v = _vaccinations[index];
-                return ListTile(
-                  title: Text(v.vaccine.name),
-                  subtitle: Text('Date: ${v.date}'),
-                );
+                return VaccinationCard(vaccination: _vaccinations[index]);
               },
             ),
     );

@@ -4,18 +4,16 @@ Pydantic schemas for request/response validation.
 
 from datetime import date
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr
 
-class UserBase(BaseModel):
-    name: str
-    birth_date: date
-    phone: str
-    email: EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
-class UserCreate(UserBase):
+class SideEffectBase(BaseModel):
+    description: str
+
+class SideEffectCreate(SideEffectBase):
     pass
 
-class User(UserBase):
+class SideEffect(SideEffectBase):
     id: int
 
     class Config:
@@ -23,7 +21,7 @@ class User(UserBase):
 
 class VaccineBase(BaseModel):
     name: str
-    manufacturer: str
+    manufacturer: Optional[str] = None
     efficacy: Optional[str] = None
 
 class VaccineCreate(VaccineBase):
@@ -38,15 +36,32 @@ class Vaccine(VaccineBase):
 class VaccinationBase(BaseModel):
     vaccine_id: int
     date: date
-    side_effects: Optional[List[str]] = None
+    side_effect_ids: Optional[List[int]] = Field(default_factory=list)
 
 class VaccinationCreate(VaccinationBase):
-    user_id: int
+    pass
 
 class Vaccination(VaccinationBase):
     id: int
     user_id: int
     vaccine: Vaccine
+    side_effects: List[SideEffect] = []
+
+    class Config:
+        orm_mode = True
+
+class UserBase(BaseModel):
+    name: str
+    birth_date: date
+    phone: str
+    email: EmailStr
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
+    id: int
+    vaccinations: List[Vaccination] = []
 
     class Config:
         orm_mode = True
