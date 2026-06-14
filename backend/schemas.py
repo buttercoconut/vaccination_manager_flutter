@@ -1,55 +1,11 @@
-"""
-Pydantic schemas for request/response validation.
+"""Pydantic schemas for request/response validation.
 """
 
 from datetime import date
 from typing import List, Optional
+from pydantic import BaseModel, EmailStr
 
-from pydantic import BaseModel, EmailStr, Field
-
-class SideEffectBase(BaseModel):
-    description: str
-
-class SideEffectCreate(SideEffectBase):
-    pass
-
-class SideEffect(SideEffectBase):
-    id: int
-
-    class Config:
-        orm_mode = True
-
-class VaccineBase(BaseModel):
-    name: str
-    manufacturer: Optional[str] = None
-    efficacy: Optional[str] = None
-
-class VaccineCreate(VaccineBase):
-    pass
-
-class Vaccine(VaccineBase):
-    id: int
-
-    class Config:
-        orm_mode = True
-
-class VaccinationBase(BaseModel):
-    vaccine_id: int
-    date: date
-    side_effect_ids: Optional[List[int]] = Field(default_factory=list)
-
-class VaccinationCreate(VaccinationBase):
-    pass
-
-class Vaccination(VaccinationBase):
-    id: int
-    user_id: int
-    vaccine: Vaccine
-    side_effects: List[SideEffect] = []
-
-    class Config:
-        orm_mode = True
-
+# User schemas
 class UserBase(BaseModel):
     name: str
     birth_date: date
@@ -57,11 +13,43 @@ class UserBase(BaseModel):
     email: EmailStr
 
 class UserCreate(UserBase):
-    password: str
+    pass
 
-class User(UserBase):
+class UserRead(UserBase):
     id: int
-    vaccinations: List[Vaccination] = []
+
+    class Config:
+        orm_mode = True
+
+# Vaccine schemas
+class VaccineBase(BaseModel):
+    name: str
+    manufacturer: Optional[str] = None
+    efficacy: Optional[str] = None
+    interval_days: int
+
+class VaccineCreate(VaccineBase):
+    pass
+
+class VaccineRead(VaccineBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+# Vaccination schemas
+class VaccinationBase(BaseModel):
+    vaccine_id: int
+    date: date
+    side_effects: Optional[dict] = None
+
+class VaccinationCreate(VaccinationBase):
+    pass
+
+class VaccinationRead(VaccinationBase):
+    id: int
+    user_id: int
+    vaccine: VaccineRead
 
     class Config:
         orm_mode = True

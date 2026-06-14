@@ -1,8 +1,9 @@
-"""
-FastAPI router with CRUD endpoints.
+"""API routes for vaccination manager.
+
+Includes CRUD for users, vaccines, and vaccinations.
 """
 
-from datetime import date
+from datetime import date, timedelta
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,79 +14,71 @@ from .database import get_db
 
 router = APIRouter()
 
-# User endpoints
-@router.post("/users", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
-def create_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = models.User(**user_in.dict(exclude={"password"}))
+# ---------- User endpoints ----------
+@router.post("/users", response_model=schemas.UserRead, status_code=status.HTTP_201_CREATED)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = models.User(**user.dict())
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
-@router.get("/users/{user_id}", response_model=schemas.User)
-def get_user(user_id: int, db: Session = Depends(get_db)):
+@router.get("/users/{user_id}", response_model=schemas.UserRead)
+def read_user(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-# Vaccine endpoints
-@router.post("/vaccines", response_model=schemas.Vaccine, status_code=status.HTTP_201_CREATED)
-def create_vaccine(vaccine_in: schemas.VaccineCreate, db: Session = Depends(get_db)):
-    vaccine = models.Vaccine(**vaccine_in.dict())
-    db.add(vaccine)
+# ---------- Vaccine endpoints ----------
+@router.post("/vaccines", response_model=schemas.VaccineRead, status_code=status.HTTP_201_CREATED)
+def create_vaccine(vaccine: schemas.VaccineCreate, db: Session = Depends(get_db)):
+    db_vaccine = models.Vaccine(**vaccine.dict())
+    db.add(db_vaccine)
     db.commit()
-    db.refresh(vaccine)
-    return vaccine
+    db.refresh(db_vaccine)
+    return db_vaccine
 
-@router.get("/vaccines", response_model=List[schemas.Vaccine])
+@router.get("/vaccines", response_model=List[schemas.VaccineRead])
 def list_vaccines(db: Session = Depends(get_db)):
     return db.query(models.Vaccine).all()
 
-# SideEffect endpoints
-@router.post("/side_effects", response_model=schemas.SideEffect, status_code=status.HTTP_201_CREATED)
-def create_side_effect(se_in: schemas.SideEffectCreate, db: Session = Depends(get_db)):
-    se = models.SideEffect(**se_in.dict())
-    db.add(se)
-    db.commit()
-    db.refresh(se)
-    return se
-
-# Vaccination endpoints
-@router.post("/users/{user_id}/vaccinations", response_model=schemas.Vaccination, status_code=status.HTTP_201_CREATED)
-def create_vaccination(user_id: int, vacc_in: schemas.VaccinationCreate, db: Session = Depends(get_db)):
-    # Validate vaccine exists
-    vaccine = db.query(models.Vaccine).filter(models.Vaccine.id == vacc_in.vaccine_id).first()
-    if not vaccine:
-        raise HTTPException(status_code=404, detail="Vaccine not found")
+# ---------- Vaccination endpoints ----------
+@router.post("/users/{user_id}/vaccinations", response_model=schemas.VaccinationRead, status_code=status.HTTP_201_CREATED)
+def create_vaccination(user_id: int, vaccination: schemas.VaccinationCreate, db: Session = Depends(get_db)):
     # Validate user exists
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    vacc = models.Vaccination(user_id=user_id, vaccine_id=vacc_in.vaccine_id, date=vacc_in.date)
-    # Attach side effects
-    if vacc_in.side_effect_ids:
-        side_effects = db.query(models.SideEffect).filter(models.SideEffect.id.in_(vacc_in.side_effect_ids)).all()
-        vacc.side_effects.extend(side_effects)
-    db.add(vacc)
+    # Validate vaccine exists
+    vaccine = db.query(models.Vaccine).filter(models.Vaccine.id == vaccination.vaccine_id).first()
+    if not vaccine:
+        raise HTTPException(status_code=404, detail="Vaccine not found")
+    db_vaccination = models.Vaccination(user_id=user_id, **vaccination.dict())
+    db.add(db_vaccination)
     db.commit()
-    db.refresh(vacc)
-    return vacc
+    db.refresh(db_vaccination)
+    return db_vaccination
 
-@router.get("/users/{user_id}/vaccinations", response_model=List[schemas.Vaccination])
+@router.get("/users/{user_id}/vaccinations", response_model=List[schemas.VaccinationRead])
 def list_vaccinations(user_id: int, db: Session = Depends(get_db)):
     return db.query(models.Vaccination).filter(models.Vaccination.user_id == user_id).all()
 
-# Core logic: next vaccination date calculation
-@router.get("/users/{user_id}/next_vaccination", response_model=dict)
-def next_vaccination(user_id: int, db: Session = Depends(get_db)):
+# ---------- Core logic: next vaccination due ----------
+@router.get("/users/{user_id}/next_due", response_model=dict)
+def next_due(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    # Simplified example: assume each vaccine requires 1 year interval
-    today = date.today()
-    last_vacc = db.query(models.Vaccination).filter(models.Vaccination.user_id == user_id).order_by(models.Vaccination.date.desc()).first()
-    if not last_vacc:
-        return {"next_date": None, "message": "No vaccination history"}
-    next_date = last_vacc.date.replace(year=last_vacc.date.year + 1)
-    return {"next_date": next_date.isoformat()}
+    # Find latest vaccination per vaccine
+    latest = (
+        db.query(models.Vaccination)
+        .filter(models.Vaccination.user_id == user_id)
+        .order_by(models.Vaccination.date.desc())
+        .first()
+    )
+    if not latest:
+        return {"message": "No vaccination records. Please add one."}
+    vaccine = db.query(models.Vaccine).filter(models.Vaccine.id == latest.vaccine_id).first()
+    next_date = latest.date + timedelta(days=vaccine.interval_days)
+    return {"next_due_date": next_date.isoformat(), "vaccine": vaccine.name}

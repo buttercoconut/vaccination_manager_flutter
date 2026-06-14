@@ -1,19 +1,22 @@
-"""
-Database session and engine setup.
+"""SQLAlchemy database configuration.
+
+Uses PostgreSQL via environment variables. In a real deployment, secrets should be
+managed securely (e.g., Docker secrets, AWS Parameter Store, etc.).
 """
 
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "sqlite:///./test.db"  # For demo; replace with PostgreSQL URL
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/vaccination_db")
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 Base = declarative_base()
 
-# Dependency
+# Dependency for path operation functions
+from fastapi import Depends
 
 def get_db():
     db = SessionLocal()
