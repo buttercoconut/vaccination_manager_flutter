@@ -13,6 +13,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Vaccination> _vaccinations = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -21,11 +22,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchVaccinations() async {
-    final data = await ApiService.getVaccinations();
-    setState(() {
-      _vaccinations = data;
-      _loading = false;
-    });
+    try {
+      final data = await ApiService.getVaccinations();
+      setState(() {
+        _vaccinations = data;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -36,14 +44,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _vaccinations.length,
-              itemBuilder: (context, index) {
-                return VaccinationCard(
-                  vaccination: _vaccinations[index],
-                );
-              },
-            ),
+          : _error != null
+              ? Center(child: Text('Error: $_error'))
+              : ListView.builder(
+                  itemCount: _vaccinations.length,
+                  itemBuilder: (context, index) {
+                    return VaccinationCard(
+                      vaccination: _vaccinations[index],
+                    );
+                  },
+                ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Navigate to add screen (not implemented yet)
