@@ -1,22 +1,39 @@
 class Vaccination {
   final int id;
-  final String vaccineName;
+  final int userId;
+  final int vaccineId;
   final DateTime date;
-  final List<String> sideEffects;
+  final String? sideEffects;
+  final String vaccineName; // for display
 
   Vaccination({
     required this.id,
-    required this.vaccineName,
+    required this.userId,
+    required this.vaccineId,
     required this.date,
-    required this.sideEffects,
+    this.sideEffects,
+    required this.vaccineName,
   });
 
   factory Vaccination.fromJson(Map<String, dynamic> json) {
     return Vaccination(
       id: json['id'],
-      vaccineName: json['vaccine_name'],
+      userId: json['user_id'],
+      vaccineId: json['vaccine_id'],
       date: DateTime.parse(json['date']),
-      sideEffects: List<String>.from(json['side_effects'] ?? []),
+      sideEffects: json['side_effects'],
+      vaccineName: json['vaccine_name'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'vaccine_id': vaccineId,
+      'date': date.toIso8601String(),
+      'side_effects': sideEffects,
+      'vaccine_name': vaccineName,
+    };
   }
 }

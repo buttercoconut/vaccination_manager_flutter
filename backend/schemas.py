@@ -1,11 +1,7 @@
-"""Pydantic schemas for request/response validation.
-"""
-
+from pydantic import BaseModel, Field, EmailStr
 from datetime import date
-from typing import List, Optional
-from pydantic import BaseModel, EmailStr
+from typing import List, Optional, Dict
 
-# User schemas
 class UserBase(BaseModel):
     name: str
     birth_date: date
@@ -13,43 +9,38 @@ class UserBase(BaseModel):
     email: EmailStr
 
 class UserCreate(UserBase):
-    pass
+    password: str
 
-class UserRead(UserBase):
+class UserOut(UserBase):
     id: int
-
     class Config:
         orm_mode = True
 
-# Vaccine schemas
 class VaccineBase(BaseModel):
     name: str
-    manufacturer: Optional[str] = None
+    manufacturer: str
     efficacy: Optional[str] = None
     interval_days: int
 
 class VaccineCreate(VaccineBase):
     pass
 
-class VaccineRead(VaccineBase):
+class VaccineOut(VaccineBase):
     id: int
-
     class Config:
         orm_mode = True
 
-# Vaccination schemas
 class VaccinationBase(BaseModel):
     vaccine_id: int
     date: date
-    side_effects: Optional[dict] = None
+    side_effects: Optional[Dict[str, str]] = Field(default_factory=dict)
 
 class VaccinationCreate(VaccinationBase):
     pass
 
-class VaccinationRead(VaccinationBase):
+class VaccinationOut(VaccinationBase):
     id: int
     user_id: int
-    vaccine: VaccineRead
-
+    vaccine: VaccineOut
     class Config:
         orm_mode = True

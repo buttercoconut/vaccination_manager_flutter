@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 
 void main() {
-  runApp(const VaccinationApp());
+  runApp(const VaccinationManagerApp());
 }
 
-class VaccinationApp extends StatelessWidget {
-  const VaccinationApp({Key? key}) : super(key: key);
+class VaccinationManagerApp extends StatelessWidget {
+  const VaccinationManagerApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -14,6 +14,7 @@ class VaccinationApp extends StatelessWidget {
       title: 'Vaccination Manager',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const HomeScreen(),
     );

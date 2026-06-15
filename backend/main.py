@@ -1,29 +1,20 @@
-"""FastAPI application entry point for Vaccination Manager backend.
-
-This module sets up the FastAPI app, includes routers, and configures the database.
-"""
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from .routes import router as vaccination_router
 
-from .database import engine, Base
-from .routes import router as api_router
+app = FastAPI(title="Vaccination Manager API")
 
-# Create all tables
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="Vaccination Manager API", version="0.1.0")
-
-# Allow CORS for Flutter app (localhost:3000 or mobile)
+# CORS 설정 (필요 시 도메인 지정)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, restrict to specific origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix="/api")
+# 라우터 등록
+app.include_router(vaccination_router, prefix="/api/vaccinations", tags=["vaccinations"])
 
 @app.get("/health")
 async def health_check():
